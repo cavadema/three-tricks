@@ -10,7 +10,10 @@ Jogo de skate no navegador feito com [Three.js](https://threejs.org). Uma manobr
 | Caixote | ×1,0 | Grinds e slides, com flip na entrada e na saída |
 | Corrimão reto | ×1,3 | Grinds, flip in, flip out e 180 out |
 | Corrimão com descida | ×1,6 | O mesmo, com a gravidade acelerando o grind |
-| Mini ramp | ×1,2 | Bombada nas paredes, manobras de borda e aéreos |
+
+## Modo livre: Mini ramp
+
+Fora do circuito de picos. Sessão de 60 segundos: bombada nas paredes, manobras de borda e aéreos encadeados, com combo de até ×3 para manobras limpas seguidas. Cair zera o combo. Tem ranking próprio.
 
 ## Controles
 

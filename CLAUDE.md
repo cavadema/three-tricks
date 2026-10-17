@@ -48,7 +48,12 @@ Para depurar: abra com `?debug` na URL e use `window.__g` (expõe `sk`, `state`,
 | caixote | Caixote | ×1,0 | grind | Grinds + flip in/out |
 | reto | Corrimão reto | ×1,3 | grind | Grinds + flip in/out + 180 out |
 | descida | Corrimão com descida | ×1,6 | grind | idem, gravidade acelera o grind |
-| mini | Mini ramp | ×1,2 | mini | Bombada nas paredes, manobras de borda e aéreos |
+
+**Mini ramp não é um pico do circuito.** É o **modo livre** (`MINI` no index.html, `session: true`): fica num card próprio no menu, fora da lista de picos e da "Soma das melhores notas". Formato **sessão de 60 s**, não "1 manobra / 3 tentativas":
+- O relógio começa no primeiro "Dropar". Depois de cada manobra a sessão continua; se o tempo acabar no meio de uma, ela ainda conta.
+- **Combo:** cada manobra limpa seguida soma +0,25 (×1 → ×3, `comboMult`). Cair zera o combo, reseta o skatista na borda e exige dropar de novo (o tempo segue correndo).
+- Repetição vale ×0,8 por uso da mesma manobra, mínimo ×0,5 (`repeatMult`). Sem replay no modo livre.
+- Nota da sessão = soma de (nota da manobra × combo). Melhor nota guardada em `best.sessao`.
 
 **Nota = Base × Execução × Multiplicador da fase × Repetição × Fakie.** Os números completos
 (gravidade 14, pop 5,2, VMAX 8,5, tabelas FLIP/GR_BOX/GR_RAIL/LIPS, instabilidade por fase, etc.)
@@ -63,13 +68,13 @@ estão no topo do `<script>`. É a fonte de verdade — mude lá.
 ## Ranking online (`api/scores.js`)
 
 - **Upstash Redis** (plano Free) conectado ao projeto na Vercel. Lê `KV_REST_API_URL`/`KV_REST_API_TOKEN` (ou `UPSTASH_REDIS_REST_*`). Sem essas variáveis, retorna 503 e o jogo esconde o botão de ranking.
-- Guarda a melhor nota e a manobra por jogador, **por pico e geral**, **semanal** (zera segunda, horário de Brasília) e **de todos os tempos**.
+- Guarda a melhor nota e a manobra por jogador, **por pico e geral** (o geral soma só os 4 picos do circuito; a mini ramp tem ranking próprio, id `sessao`, teto 60000), **semanal** (zera segunda, horário de Brasília) e **de todos os tempos**.
 - Apelido escolhido na 1ª vez + id anônimo, guardados no `localStorage`.
 - Proteções: rejeita nota acima do máximo de cada pico (`PICOS`), limita 12 envios por IP / 10 min. **Não é à prova de trapaça** (jogo roda no cliente); suficiente para lançamento.
 
 ## Estado atual (17/10/2026)
 
-Pronto e no ar: 5 picos, 2 skatistas (Michelle, Beto), fakie, giros 180/360, flip in/out nos grinds, mini ramp com bombada pelas setas, replay, menu de pausa e navegação, ranking online conectado e verificado.
+Pronto: 4 picos no circuito + mini ramp como modo livre de 60 s (ainda não publicado), 2 skatistas (Michelle, Beto), fakie, giros 180/360, flip in/out nos grinds, mini ramp com bombada pelas setas, replay, menu de pausa e navegação, ranking online conectado e verificado.
 
 ## Ideias de próximos passos
 

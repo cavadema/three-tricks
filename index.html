@@ -42,6 +42,8 @@ body{font-family:var(--body);font-size:16px;-webkit-user-select:none;user-select
 .dot.cur{background:var(--paper)}
 #bestTxt{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
 #bestTxt b{color:var(--paper)}
+#dots .tm{font-family:var(--display);font-size:20px;line-height:1;font-variant-numeric:tabular-nums}
+#dots .tm.low{color:#FF6B5A}
 
 #trick{top:72px;left:0;right:0;text-align:center;font-family:var(--display);font-size:clamp(22px,6vw,34px);color:var(--stripe);text-shadow:3px 3px 0 var(--ink),-1px -1px 0 var(--ink);letter-spacing:.01em;padding-inline:16px}
 #flash{top:42%;left:0;right:0;text-align:center;font-family:var(--display);font-size:clamp(20px,5.5vw,30px);color:var(--paper);text-shadow:3px 3px 0 var(--ink);opacity:0;transition:opacity .25s, transform .25s}
@@ -259,6 +261,8 @@ h1{color:#fff;text-shadow:none;transform:none;font-size:clamp(48px,14vw,80px);li
       <div class="eyebrow">Picos</div>
       <div id="levelGrid" class="levels"></div>
       <div class="total"><span>Soma das melhores notas</span><strong id="totalScore">0</strong></div>
+      <div class="eyebrow">Modo livre</div>
+      <div id="miniCard" class="levels"></div>
       <button id="rankBtn" class="big" type="button" hidden>Ranking</button>
       <ul class="how">
         <li><kbd>Remar</kbd><span>Ganha velocidade. Mantenha o ponteiro na faixa verde.</span></li>
@@ -266,7 +270,7 @@ h1{color:#fff;text-shadow:none;transform:none;font-size:clamp(48px,14vw,80px);li
         <li><kbd>Deslizar</kbd><span>No ar: ← → ↓ fazem flips em qualquer pico. No caixote e nos corrimões, dá para fazer flip antes do grind (Kickflip Boardslide) e na saída (Kickflip out).</span></li>
         <li><kbd>1 2 3 4</kbd><span>No caixote e nos corrimões, os botões de grind (ou teclas 1 a 4) escolhem o grind, antes ou depois de pular. Sem escolha, sai um 50-50.</span></li>
         <li><kbd>◀ ▶</kbd><span>No grind, toque o lado oposto ao ponteiro para não cair.</span></li>
-        <li><kbd>Mini ramp</kbd><span>Segure ◀ ou ▶ para o lado em que o skate está indo para bombear e ganhar altura. A manobra escolhida (botões 1 a 4 ou Aéreo) sai na próxima borda.</span></li>
+        <li><kbd>Mini ramp</kbd><span>Modo livre, fora dos picos: sessão de 60 s encadeando manobras. Segure ◀ ou ▶ para o lado em que o skate está indo para bombear e ganhar altura. A manobra escolhida (botões 1 a 4 ou Aéreo) sai na próxima borda. Manobras limpas seguidas aumentam o combo.</span></li>
         <li><kbd>Base</kbd><span>No chão, “Trocar base” vira o skate e você passa a andar de fakie. Manobras de fakie valem ×1,15.</span></li>
         <li><kbd>↑ no ar</kbd><span>Gira o corpo 180° (BS 180) e você cai com o pé da frente atrás. Duas vezes faz 360°. Nos corrimões, ↑ durante o grind prepara um 180 out.</span></li>
       </ul>
@@ -310,7 +314,7 @@ h1{color:#fff;text-shadow:none;transform:none;font-size:clamp(48px,14vw,80px);li
       <div class="eyebrow" id="rankName"></div>
       <h2>Ranking</h2>
       <div id="rankPeriods" class="seg"><button type="button" data-p="week">Semana</button><button type="button" data-p="all">Todos os tempos</button></div>
-      <div id="rankPicos" class="chips"><button type="button" data-k="geral">Geral</button><button type="button" data-k="rampa">Rampa</button><button type="button" data-k="caixote">Caixote</button><button type="button" data-k="reto">Corrimão</button><button type="button" data-k="descida">Descida</button><button type="button" data-k="mini">Mini ramp</button></div>
+      <div id="rankPicos" class="chips"><button type="button" data-k="geral">Geral</button><button type="button" data-k="rampa">Rampa</button><button type="button" data-k="caixote">Caixote</button><button type="button" data-k="reto">Corrimão</button><button type="button" data-k="descida">Descida</button><button type="button" data-k="sessao">Mini ramp (sessão)</button></div>
       <div id="rankList" class="rlist"></div>
       <p class="rule" id="rankFoot"></p>
       <div class="actions"><button id="rankBack" class="big alt" type="button">Voltar</button></div>
@@ -321,7 +325,7 @@ h1{color:#fff;text-shadow:none;transform:none;font-size:clamp(48px,14vw,80px);li
     <div class="wrap">
       <div class="eyebrow" id="finEyebrow">Resultado</div>
       <h2 id="finName"></h2>
-      <div><div class="eyebrow">Melhor nota</div><div class="bigscore" id="finBest">0</div></div>
+      <div><div class="eyebrow" id="finBestLbl">Melhor nota</div><div class="bigscore" id="finBest">0</div></div>
       <div class="att" id="finList"></div>
       <div id="finRank" class="rankBox" hidden></div>
       <div class="actions">
@@ -412,11 +416,12 @@ const LEVELS = [
     rule: 'Pulo fraco com pouca velocidade não alcança a altura do corrimão.' },
   { id: 'descida', name: 'Corrimão com descida', sub: '10 degraus', mult: 1.6, kind: 'grind', ob: 'down', x0: -0.4, x1: 7.4, h0: 2.05, slope: -0.2143, popX: -2.6, popHalf: 1.2, inst: 5.2, accel: 2.2, band: [5, 8], startX: -13, v0: 3.6, grinds: GR_RAIL,
     desc: 'O corrimão desce a escada. A gravidade acelera o grind e o equilíbrio oscila mais rápido.',
-    rule: 'Errar o corrimão aqui significa cair na escada.' },
-  { id: 'mini', name: 'Mini ramp', sub: 'Transição de 1,7 m', mult: 1.2, kind: 'mini', F: 1.5, R: 1.7, deck: 1.4, band: [0, 0], startX: 0, v0: 0, popX: 0, popHalf: 1, lips: LIPS,
-    desc: 'Drope da borda, bombeie nas paredes para ganhar altura e solte a manobra na borda.',
-    rule: 'Manobras de borda valem mais chegando devagar, na faixa verde. Aéreos pedem altura: segure a seta por mais tempo.' }
+    rule: 'Errar o corrimão aqui significa cair na escada.' }
 ];
+/* Modo livre: fora do circuito de picos e da soma das melhores notas. */
+const MINI = { id: 'sessao', name: 'Mini ramp', sub: 'Sessão de 60 s · transição de 1,7 m', mult: 1.2, kind: 'mini', session: true, F: 1.5, R: 1.7, deck: 1.4, band: [0, 0], startX: 0, v0: 0, popX: 0, popHalf: 1, lips: LIPS,
+  desc: 'Sessão livre de 60 segundos. Drope da borda, bombeie nas paredes e encadeie o máximo de manobras que conseguir.',
+  rule: 'Manobras de borda valem mais chegando devagar, na faixa verde. Aéreos pedem altura: segure a seta por mais tempo. Se o tempo acabar no meio de uma manobra, ela ainda conta.' };
 function topAt(L, x) { return L.h0 + L.slope * x; }
 function groundY(L, x) {
   if (L.ob === 'down') { if (x < 0) return 1.5; if (x < 7) return 1.5 - 0.2143 * x; return 0; }
@@ -979,6 +984,7 @@ let state = 'menu';
 let sk = null;
 let attempts = [];
 let attemptIdx = 0;
+let sess = null;
 let stateT = 0;
 let popHeld = false;
 let rec = [], recT = 0, popRecT = null, replay = null, paused = false;
@@ -1014,13 +1020,20 @@ function renderMenu() {
     grid.appendChild(el);
   });
   $('totalScore').textContent = fmt(total);
+  const mc = $('miniCard'); mc.innerHTML = '';
+  const mb = document.createElement('button'); mb.className = 'lvl'; mb.type = 'button';
+  mb.innerHTML = `<span class="n">${MINI.name}</span><span class="s">${MINI.sub}</span><span class="row"><span class="m">Combo até ×3</span><span class="b">Melhor <strong>${fmt(best[MINI.id] || 0)}</strong></span></span>`;
+  mb.addEventListener('click', () => openPre(-1));
+  mc.appendChild(mb);
   renderSkaterPick();
 }
 function openPause() {
   if (paused || $('hud').hidden) return;
   paused = true; popHeld = false;
   $('pauseName').textContent = L.name;
-  $('pauseEyebrow').textContent = `Pausado · tentativa ${Math.min(3, attempts.length + 1)} de 3`;
+  $('pauseEyebrow').textContent = L.session ? `Pausado · sessão livre` : `Pausado · tentativa ${Math.min(3, attempts.length + 1)} de 3`;
+  $('pRestart').textContent = L.session ? 'Recomeçar sessão' : 'Recomeçar fase';
+  $('pauseWarn').textContent = L.session ? 'Sair ou trocar de pico descarta a sessão em andamento.' : 'Sair ou trocar de pico descarta as tentativas desta fase.';
   const box = $('pauseLevels'); box.innerHTML = '';
   LEVELS.forEach((lv, i) => {
     const b = document.createElement('button'); b.type = 'button'; b.className = 'lvl' + (i === levelIdx ? ' cur' : '');
@@ -1028,12 +1041,16 @@ function openPause() {
     b.addEventListener('click', () => { closePause(); leaveLevel(); openPre(i); });
     box.appendChild(b);
   });
+  const mb = document.createElement('button'); mb.type = 'button'; mb.className = 'lvl' + (L.session ? ' cur' : '');
+  mb.innerHTML = `<span class="n">${MINI.name}</span><span class="row"><span class="m">Livre</span><span class="b">Melhor <strong>${fmt(best[MINI.id] || 0)}</strong></span></span>`;
+  mb.addEventListener('click', () => { closePause(); leaveLevel(); openPre(-1); });
+  box.appendChild(mb);
   show('pause', true);
   setTimeout(() => $('pResume').focus(), 50);
 }
 function closePause() { paused = false; show('pause', false); }
 function leaveLevel() {
-  replay = null; pending = null; popHeld = false; flashTimer = 0; $('flash').classList.remove('show');
+  replay = null; pending = null; sess = null; popHeld = false; flashTimer = 0; $('flash').classList.remove('show');
   ['result', 'hud', 'controls', 'grindCtl', 'speed', 'balance', 'replayTag', 'grindPick'].forEach(id => show(id, false));
   setTrick(''); setHint('');
 }
@@ -1046,18 +1063,18 @@ function openMenu() {
   renderMenu();
 }
 function openPre(i) {
-  levelIdx = i; L = LEVELS[i]; buildLevel(L);
-  attempts = []; attemptIdx = 0;
+  levelIdx = i; L = i < 0 ? MINI : LEVELS[i]; buildLevel(L);
+  attempts = []; attemptIdx = 0; sess = null;
   sk = newSkater(); placeSkater(); snapCamera();
   state = 'pre';
   show('menu', false); show('final', false); show('pre', true);
-  $('preEyebrow').textContent = `Fase ${i + 1} de ${LEVELS.length} · multiplicador ${fmtX(L.mult)}`;
+  $('preEyebrow').textContent = L.session ? `Modo livre · multiplicador ${fmtX(L.mult)}` : `Fase ${i + 1} de ${LEVELS.length} · multiplicador ${fmtX(L.mult)}`;
   $('preName').textContent = L.name;
   $('preDesc').textContent = L.desc;
   $('preRule').textContent = L.rule;
   const rows = [];
   if (L.kind === 'mini') {
-    rows.push(['Dropar', 'Desce da borda e começa a andar'], ['◀ ▶', 'Segure a seta para o lado em que o skate está indo: ele bombeia sozinho na hora certa (+0,35 m). Solte para não subir mais'], ['Botões 1 a 4', 'Rock to Fakie 220 · Axle Stall 260 · Nose Stall 320 · Blunt to Fakie 420'], ['Aéreo', 'Arma um aéreo: ← → ↓ flips, ↑ gira 180, segure GRAB'], ['Na borda', 'A manobra escolhida sai na próxima borda que você alcançar']);
+    rows.push(['Dropar', 'Desce da borda e começa os 60 s da sessão'], ['Combo', 'Cada manobra limpa seguida soma +0,25 ao combo (até ×3). Cair zera e exige dropar de novo'], ['◀ ▶', 'Segure a seta para o lado em que o skate está indo: ele bombeia sozinho na hora certa (+0,35 m). Solte para não subir mais'], ['Botões 1 a 4', 'Rock to Fakie 220 · Axle Stall 260 · Nose Stall 320 · Blunt to Fakie 420'], ['Aéreo', 'Arma um aéreo: ← → ↓ flips, ↑ gira 180, segure GRAB'], ['Na borda', 'A manobra escolhida sai na próxima borda que você alcançar, e a sessão continua'], ['Repetir', 'A mesma manobra vale ×0,8 a cada repetição (mínimo ×0,5)']);
   } else if (L.kind === 'air') {
     rows.push(['Nada', 'Ollie · 100'], ['←', 'Kickflip · 300'], ['→', 'Heelflip · 320'], ['↓', 'Pop Shove-it · 250'], ['↓ ←', 'Varial Flip · 500'], ['↓ ↓ ←', '360 Flip · 700'], ['← ←', 'Double Kickflip · 550'], ['↑', 'BS 180 · +200 (com ← vira BS Flip)'], ['↑ ↑', 'BS 360 · +450'], ['De fakie', '×1,15 · ↑ vira Half-Cab'], ['Segurar GRAB', 'Indy Grab · +200 e mais por segundo']);
   } else {
@@ -1082,10 +1099,12 @@ function startAttempt() {
   renderGrindPick(); show('grindPick', L.kind !== 'air');
   $('stance').hidden = L.kind === 'mini'; $('pop').classList.remove('armed'); $('push').classList.remove('ready');
   $('push').hidden = L.kind === 'mini'; show('pumpArrows', L.kind === 'mini'); ['pumpL', 'pumpR'].forEach(id => $(id).classList.remove('ready', 'dir')); $('spdLbl').textContent = 'Velocidade';
-  $('lvlName').textContent = L.name; $('lvlMult').textContent = fmtX(L.mult);
+  $('lvlName').textContent = L.name; $('lvlMult').textContent = L.session ? '' : fmtX(L.mult);
   const band = $('spdBand'); band.style.left = (L.band[0] / VMAX * 100) + '%'; band.style.width = ((L.band[1] - L.band[0]) / VMAX * 100) + '%';
   $('pop').textContent = 'Pular'; $('pop').disabled = false; $('push').disabled = false; $('stance').disabled = false;
-  updateDots(); setTrick('');
+  setTrick('');
+  if (L.session) { attempts = []; sess = { t: 0, on: false, total: 0, combo: 0, bestCombo: 0, bails: 0, ending: false, hudKey: '' }; sessionHud(true); $('lvlMult').textContent = 'Combo ×1'; }
+  else updateDots();
   if (L.kind === 'mini') {
     const band = $('spdBand');
     $('pop').textContent = 'Dropar'; $('push').textContent = 'Bombear'; $('push').disabled = true; $('spdLbl').textContent = 'Altura na borda';
@@ -1375,7 +1394,10 @@ function miss(reason) {
   show('controls', false); show('grindPick', false);
   pending = { fail: true, name: 'Sem manobra', reason, score: 0 };
 }
-function repeatMult(name) { return attempts.some(a => !a.fail && a.name === name) ? 0.8 : 1; }
+function repeatMult(name) {
+  const n = attempts.filter(a => !a.fail && a.name === name).length;
+  return L.session ? Math.max(0.5, Math.pow(0.8, n)) : (n ? 0.8 : 1);
+}
 function landAir() {
   const rem = flipActive();
   if (rem) return bail('O shape ainda estava girando');
@@ -1475,21 +1497,38 @@ function nextFromResult() {
 function showFinal() {
   show('result', false); show('hud', false); show('pre', false);
   state = 'final';
-  const b = attempts.reduce((m, a) => Math.max(m, a.score), 0);
-  if (b > (best[L.id] || 0)) { best[L.id] = b; saveBest(); }
-  $('finEyebrow').textContent = `Fase ${levelIdx + 1} · ${fmtX(L.mult)}` + (b > 0 && b >= (best[L.id] || 0) ? ' · recorde salvo' : '');
+  let b, bestName, list, eyebrow;
+  if (L.session) {
+    if (sess) sess.on = false;
+    b = sess ? sess.total : 0;
+    const top = attempts.reduce((m, a) => (!a.fail && (!m || a.score > m.score) ? a : m), null);
+    bestName = top ? top.name : '';
+    const bi = top ? attempts.indexOf(top) : -1, tricks = attempts.filter(a => !a.fail).length;
+    const rec = b > 0 && b > (best[L.id] || 0);
+    if (rec) { best[L.id] = b; saveBest(); }
+    eyebrow = `Modo livre · ${tricks} ${tricks === 1 ? 'manobra' : 'manobras'}` + (sess && sess.bestCombo > 1 ? ` · melhor combo ${fmtX(comboMult(sess.bestCombo))}` : '') + (rec ? ' · recorde salvo' : '');
+    list = attempts.length ? attempts.map((a, i) => `<div class="${i === bi ? 'best' : ''}"><span><strong>${a.name}</strong><small>${a.fail ? 'Queda · ' + a.reason : (a.combo > 1 ? 'Combo ' + fmtX(a.combo) : 'Sem combo')}</small></span><strong>${fmt(a.score)}</strong></div>`).join('') : '<div><span><strong>Nenhuma manobra</strong><small>Dropar e escolher uma manobra antes do tempo acabar</small></span><strong>0</strong></div>';
+  } else {
+    b = attempts.reduce((m, a) => Math.max(m, a.score), 0);
+    if (b > (best[L.id] || 0)) { best[L.id] = b; saveBest(); }
+    const bi = attempts.findIndex(a => a.score === b && b > 0);
+    bestName = bi >= 0 ? attempts[bi].name : '';
+    eyebrow = `Fase ${levelIdx + 1} · ${fmtX(L.mult)}` + (b > 0 && b >= (best[L.id] || 0) ? ' · recorde salvo' : '');
+    list = attempts.map((a, i) => `<div class="${i === bi ? 'best' : ''}"><span><strong>${a.name}</strong><small>Tentativa ${i + 1}${a.fail ? ' · ' + a.reason : ''}</small></span><strong>${fmt(a.score)}</strong></div>`).join('');
+  }
+  $('finEyebrow').textContent = eyebrow;
   $('finName').textContent = L.name;
+  $('finBestLbl').textContent = L.session ? 'Pontos da sessão' : 'Melhor nota';
   $('finBest').textContent = fmt(b);
-  const bi = attempts.findIndex(a => a.score === b && b > 0);
-  $('finList').innerHTML = attempts.map((a, i) => `<div class="${i === bi ? 'best' : ''}"><span><strong>${a.name}</strong><small>Tentativa ${i + 1}${a.fail ? ' · ' + a.reason : ''}</small></span><strong>${fmt(a.score)}</strong></div>`).join('');
-  $('finNext').hidden = levelIdx >= LEVELS.length - 1;
-  offerRanking(L, b, bi >= 0 ? attempts[bi].name : '');
+  $('finList').innerHTML = list;
+  $('finNext').hidden = L.session || levelIdx >= LEVELS.length - 1;
+  offerRanking(L, b, bestName);
   show('final', true);
   setTimeout(() => ($('finNext').hidden ? $('finAgain') : $('finNext')).focus(), 50);
 }
 
 /* ---------- Mini ramp ---------- */
-const MINI_Y0 = 0.015, MINI_FR = 0.16, PUMP_H = 0.35, PUMP_DUR = 0.3, STALL_DUR = 0.85, LIP_MAX = 3.6, MINI_TIME = 30, KICK_DUR = 0.32, MINI_EMAX = 1.0;
+const MINI_Y0 = 0.015, MINI_FR = 0.16, PUMP_H = 0.35, PUMP_DUR = 0.3, STALL_DUR = 0.85, LIP_MAX = 3.6, SESSION_TIME = 60, KICK_DUR = 0.32, MINI_EMAX = 1.0;
 function miniSC() { return L.F + L.R * Math.PI / 2; }
 function miniPos(s) {
   const a = Math.abs(s), sg = s < 0 ? -1 : 1, sC = miniSC();
@@ -1509,6 +1548,7 @@ function miniPop() {
   const s = sk;
   if (!s.dropped) {
     s.dropped = true; s.ms = -miniSC() + 0.02; s.u = 0.5; s.dropT = 0;
+    if (sess) sess.on = true;
     $('pop').textContent = 'Aéreo';
     setHint('Segure ◀ ou ▶ para onde está indo');
     return;
@@ -1594,6 +1634,12 @@ function landMiniAir() {
 }
 function updateMini(dt) {
   const s = sk, sC = miniSC();
+  if (sess) {
+    if (sess.on) sess.t += dt;
+    sessionHud(false);
+    if (sess.ending) { if (stateT > 1.2) { sess.ending = false; showFinal(); } }
+    else if (sess.on && sess.t >= SESSION_TIME && state === 'approach') { endSession(); }
+  }
   if (!s.dropped) { miniStartPose(); return; }
   if (state === 'stall') {
     s.stallT += dt;
@@ -1602,7 +1648,6 @@ function updateMini(dt) {
     if (s.stallT >= STALL_DUR) endStall();
     return;
   }
-  if (state === 'approach') { s.rideT += dt; if (s.rideT > MINI_TIME) { popRecT = Math.max(0, recT - 1.5); miss('Tempo esgotado'); ['grindPick', 'speed'].forEach(id => show(id, false)); return; } }
   if (s.dropT >= 0) { s.dropT += dt; if (s.dropT > 0.3) s.dropT = -1; }
   if (s.kickT >= 0) { s.kickT += dt; const p = Math.min(1, s.kickT / KICK_DUR); s.face = s.kickFrom + Math.PI * _sm(p); if (p >= 1) { s.face = normAng(s.face); s.kickT = -1; } }
   if (state === 'air') {
@@ -1647,14 +1692,53 @@ function updateMini(dt) {
     const H = miniEnergyH(), sur = H - L.R;
     $('spdFill').style.width = clamp(H / (L.R + MINI_EMAX), 0, 1) * 100 + '%';
     $('spdVal').textContent = (sur >= 0 ? '+' : '−') + Math.abs(sur).toFixed(2).replace('.', ',') + ' m';
-    $('spdLbl').textContent = `Altura na borda · ${Math.max(0, Math.ceil(MINI_TIME - s.rideT))} s`;
     const rd = s.pumpT < 0 && pumpCheck().ok, dir = Math.abs(s.u) > 0.15 ? Math.sign(s.u) : 0;
     $('pumpR').classList.toggle('dir', dir > 0); $('pumpL').classList.toggle('dir', dir < 0);
     $('pumpR').classList.toggle('ready', rd && dir > 0); $('pumpL').classList.toggle('ready', rd && dir < 0);
   } else { ['pumpL', 'pumpR'].forEach(id => $(id).classList.remove('ready', 'dir')); }
-  if (state === 'landed' && stateT > 1.1 && pending) startReplay(false);
-  if (state === 'bail' && stateT > 1.4 && pending) startReplay(false);
+  if (state === 'landed' && stateT > 0.7 && pending) sessionAfterTrick();
+  else if (state === 'bail' && stateT > 1.4 && pending) sessionAfterTrick();
 }
+/* ---------- Sessão da mini ramp (modo livre) ---------- */
+const comboMult = n => Math.min(3, 1 + 0.25 * Math.max(0, n - 1));
+const fmtTime = t => { const n = Math.max(0, Math.ceil(t)); return Math.floor(n / 60) + ':' + String(n % 60).padStart(2, '0'); };
+function sessionHud(force) {
+  const left = SESSION_TIME - sess.t, key = Math.ceil(left) + '|' + sess.total + '|' + sess.combo;
+  if (!force && key === sess.hudKey) return;
+  sess.hudKey = key;
+  $('dots').innerHTML = `<span class="tm${left <= 10 ? ' low' : ''}">${fmtTime(left)}</span>`;
+  $('bestTxt').innerHTML = `Pontos <b>${fmt(sess.total)}</b>`;
+  $('lvlMult').textContent = 'Combo ' + fmtX(comboMult(sess.combo + 1));
+}
+function sessionAfterTrick() {
+  if (!sess) return;
+  const p = pending; pending = null;
+  if (p.fail) {
+    sess.combo = 0; sess.bails++;
+    attempts.push({ name: p.name, reason: p.reason, fail: true, score: 0, combo: 1 });
+  } else {
+    sess.combo++; sess.bestCombo = Math.max(sess.bestCombo, sess.combo);
+    const cm = comboMult(sess.combo), pts = Math.round(p.score * cm);
+    sess.total += pts;
+    attempts.push({ name: p.name, fail: false, score: pts, combo: cm });
+    flash(`+${fmt(pts)}` + (cm > 1 ? ` · combo ${fmtX(cm)}` : ''));
+  }
+  if (sess.t >= SESSION_TIME) { endSession(); return; }
+  sessionHud(true);
+  if (p.fail) { sk = newSkater(); placeSkater(); }
+  else Object.assign(sk, { lip: null, airArmed: false, swipes: '', flips: [], flipIdx: 0, flipProg: 0, spins: 0, spinProg: 0, grab: false, grabT: 0, grabEndAt: 0, rotDoneAt: 0, spinDoneAt: 0, stallT: -1, pumpWin: 0 });
+  state = 'approach'; stateT = 0; popHeld = false; popRecT = null; rec = []; recT = 0;
+  show('controls', true); show('speed', true); show('grindPick', true); show('pumpArrows', true);
+  $('pop').textContent = sk.dropped ? 'Aéreo' : 'Dropar'; $('pop').disabled = false;
+  syncMiniPick();
+  setHint(sk.dropped ? 'Escolha a próxima manobra' : 'Toque em Dropar para voltar à rampa');
+}
+function endSession() {
+  sess.ending = true; sess.on = false; state = 'landed'; stateT = 0; pending = null; popHeld = false;
+  ['controls', 'grindPick', 'speed'].forEach(id => show(id, false));
+  setTrick(''); setHint(''); flash('Tempo esgotado');
+}
+
 function miniPose(s) {
   if (!s.dropped) { skater.rotation.z = 0; return; }
   if (state === 'stall') {
@@ -2037,7 +2121,6 @@ bindPress($('balR'), () => balanceTap(1));
 let sw = null;
 canvas.addEventListener('pointerdown', e => {
   if (paused) return;
-  if (L.kind === 'mini' && state === 'approach' && sk && sk.dropped && (k === 'ArrowLeft' || k === 'ArrowRight')) { e.preventDefault(); if (!e.repeat) pumpPress(k === 'ArrowRight' ? 1 : -1); return; }
   if (state === 'replay') { endReplay(); return; }
   sw = { x: e.clientX, y: e.clientY, id: e.pointerId };
   if (state === 'grind') balanceTap(e.clientX < canvas.clientWidth / 2 ? -1 : 1);
@@ -2059,7 +2142,8 @@ window.addEventListener('keydown', e => {
   const k = e.key;
   if (k === 'Escape' || k === 'p' || k === 'P') { if (paused) { e.preventDefault(); closePause(); return; } if (state !== 'replay' || k !== 'Escape') { if (!$('hud').hidden) { e.preventDefault(); openPause(); return; } } }
   if (paused) return;
-  if (state === 'replay' && (k === ' ' || k === 'Enter' || k === 'Escape')) { e.preventDefault(); endReplay(); return; }
+  if (L.kind === 'mini' && state === 'approach' && sk && sk.dropped && (k === 'ArrowLeft' || k === 'ArrowRight')) { e.preventDefault(); pumpPress(k === 'ArrowRight' ? 1 : -1); return; }
+  if (state === 'replay' && (k === ' '|| k === 'Enter' || k === 'Escape')) { e.preventDefault(); endReplay(); return; }
   if (state === 'approach' || state === 'air' || state === 'grind') e.preventDefault();
   if (k === 'ArrowUp' || k === 'w' || k === 'W') { if (state === 'air' || state === 'grind') swipe('U'); else push(); }
   else if (k === 'b' || k === 'B') switchBase();
@@ -2087,7 +2171,7 @@ $('rankBack').addEventListener('click', openMenu);
 buildLevel(L); sk = newSkater(); sk.x = L.startX + 2;
 loadAvatar();
 resize(); openMenu(); rankCheck();
-if (location.search.indexOf('debug') >= 0) window.__g = { testFinal(lv, sc, nm) { openPre(lv); attempts = [{ name: nm, score: sc, fail: false }]; showFinal(); }, setState(v) { state = v; }, FLIP, miniPos, get Lv() { return L; }, selectGrind, camera, PUSH_DUR, board, wheels, switchBase, get L() { return L; }, placeSkater, openPre, startAttempt, pop, swipe, push, startReplay, get sk() { return sk; }, get state() { return state; }, get avatar() { return avatar; }, get env() { return envReady; } };
+if (location.search.indexOf('debug') >= 0) window.__g = { testFinal(lv, sc, nm) { openPre(lv); attempts = [{ name: nm, score: sc, fail: false }]; showFinal(); }, setState(v) { state = v; }, FLIP, miniPos, get Lv() { return L; }, selectGrind, camera, PUSH_DUR, board, wheels, switchBase, get L() { return L; }, placeSkater, openPre, startAttempt, pop, swipe, push, startReplay, get sk() { return sk; }, get sess() { return sess; }, get attempts() { return attempts; }, get state() { return state; }, get avatar() { return avatar; }, get env() { return envReady; } };
 requestAnimationFrame(frame);
 })();
 </script>

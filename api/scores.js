@@ -1,8 +1,12 @@
 // Ranking do Three Tricks: guarda a melhor nota de cada jogador por pico,
 // na semana e de todos os tempos, num Redis da Upstash (via REST).
 
-const PICOS = { rampa: 4000, caixote: 4000, reto: 5000, descida: 6500, mini: 3500 };
-const ALL = Object.keys(PICOS);
+// Picos do circuito: a nota é de uma manobra só e todos entram na soma do ranking geral.
+const CIRCUITO = { rampa: 4000, caixote: 4000, reto: 5000, descida: 6500 };
+// Modo livre: a nota é a soma de uma sessão de 60 s, por isso fica fora do ranking geral.
+const LIVRE = { sessao: 60000 };
+const PICOS = { ...CIRCUITO, ...LIVRE };
+const ALL = Object.keys(CIRCUITO);
 const TOP = 20;
 const RATE_MAX = 12; // envios por IP a cada 10 minutos
 
