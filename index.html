@@ -178,6 +178,29 @@ h1{color:#fff;text-shadow:none;transform:none;font-size:clamp(48px,14vw,80px);li
 #grindPick button span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #grindPick button.on{border-color:var(--stripe);background:rgba(232,185,49,.22)}
 #grindPick button.on span{color:var(--stripe)}
+.seg{display:flex;gap:6px}
+.seg button,.chips button{pointer-events:auto;cursor:pointer;font-family:var(--display);font-weight:800;font-style:italic;text-transform:uppercase;letter-spacing:.02em;color:#fff;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.22);border-radius:6px}
+.seg button{flex:1;padding:10px;font-size:15px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{padding:7px 10px;font-size:13px}
+.seg button.on,.chips button.on{background:var(--stripe);color:var(--ink);border-color:var(--stripe)}
+.seg button:focus-visible,.chips button:focus-visible{outline:3px solid var(--stripe);outline-offset:2px}
+.rlist{display:grid;gap:6px}
+.rrow{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 12px;background:rgba(14,20,28,.6);border:1px solid rgba(255,255,255,.12);border-radius:8px;font-variant-numeric:tabular-nums}
+.rrow.me{border-color:var(--stripe);background:rgba(232,185,49,.12)}
+.rpos{font-family:var(--display);font-weight:800;font-style:italic;font-size:20px;color:var(--muted)}
+.rrow:nth-child(-n+3) .rpos{color:var(--stripe)}
+.rwho{min-width:0;display:flex;flex-direction:column}
+.rwho strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rwho small{color:var(--muted);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rsc{font-family:var(--display);font-weight:800;font-style:italic;font-size:20px}
+.rgap{text-align:center;color:var(--muted)}
+.rankBox{display:grid;gap:8px;padding:14px;border:1px solid rgba(232,185,49,.5);border-radius:10px;background:rgba(232,185,49,.08)}
+.rankHead{font-size:17px}
+.rankHead strong{font-family:var(--display);font-weight:800;font-style:italic;text-transform:uppercase;font-size:22px;color:var(--stripe)}
+.nickForm{display:flex;gap:8px;flex-wrap:wrap}
+.nickForm input{flex:1 1 180px;min-width:0;font:inherit;font-size:17px;padding:12px;border-radius:6px;border:1px solid rgba(255,255,255,.35);background:rgba(14,20,28,.7);color:#fff}
+.nickForm input:focus-visible{outline:3px solid var(--stripe);outline-offset:1px}
 #pause{z-index:5;background:rgba(14,20,28,.92)}
 .lvl .row{gap:8px}
 .wrap>.eyebrow{margin-bottom:-6px}
@@ -236,6 +259,7 @@ h1{color:#fff;text-shadow:none;transform:none;font-size:clamp(48px,14vw,80px);li
       <div class="eyebrow">Picos</div>
       <div id="levelGrid" class="levels"></div>
       <div class="total"><span>Soma das melhores notas</span><strong id="totalScore">0</strong></div>
+      <button id="rankBtn" class="big" type="button" hidden>Ranking</button>
       <ul class="how">
         <li><kbd>Remar</kbd><span>Ganha velocidade. Mantenha o ponteiro na faixa verde.</span></li>
         <li><kbd>Pular</kbd><span>Toque em cima da faixa amarela no chão. No centro, o pulo sai perfeito. No skate, esse pulo se chama pop.</span></li>
@@ -281,12 +305,25 @@ h1{color:#fff;text-shadow:none;transform:none;font-size:clamp(48px,14vw,80px);li
     </div>
   </div>
 
+  <div id="rank" class="screen" hidden>
+    <div class="wrap">
+      <div class="eyebrow" id="rankName"></div>
+      <h2>Ranking</h2>
+      <div id="rankPeriods" class="seg"><button type="button" data-p="week">Semana</button><button type="button" data-p="all">Todos os tempos</button></div>
+      <div id="rankPicos" class="chips"><button type="button" data-k="geral">Geral</button><button type="button" data-k="rampa">Rampa</button><button type="button" data-k="caixote">Caixote</button><button type="button" data-k="reto">Corrimão</button><button type="button" data-k="descida">Descida</button><button type="button" data-k="mini">Mini ramp</button></div>
+      <div id="rankList" class="rlist"></div>
+      <p class="rule" id="rankFoot"></p>
+      <div class="actions"><button id="rankBack" class="big alt" type="button">Voltar</button></div>
+    </div>
+  </div>
+
   <div id="final" class="screen" hidden>
     <div class="wrap">
       <div class="eyebrow" id="finEyebrow">Resultado</div>
       <h2 id="finName"></h2>
       <div><div class="eyebrow">Melhor nota</div><div class="bigscore" id="finBest">0</div></div>
       <div class="att" id="finList"></div>
+      <div id="finRank" class="rankBox" hidden></div>
       <div class="actions">
         <button id="finNext" class="big" type="button">Próxima fase</button>
         <button id="finAgain" class="big alt" type="button">Jogar de novo</button>
@@ -1004,7 +1041,7 @@ function openMenu() {
   if (paused) closePause();
   leaveLevel();
   state = 'menu';
-  ['pre', 'final', 'result', 'hud', 'controls', 'grindCtl', 'speed', 'balance'].forEach(id => show(id, false));
+  ['pre', 'final', 'result', 'hud', 'controls', 'grindCtl', 'speed', 'balance', 'rank'].forEach(id => show(id, false));
   show('menu', true); setTrick(''); setHint('');
   renderMenu();
 }
@@ -1436,7 +1473,7 @@ function nextFromResult() {
   if (attempts.length < 3) startAttempt(); else showFinal();
 }
 function showFinal() {
-  show('result', false); show('hud', false);
+  show('result', false); show('hud', false); show('pre', false);
   state = 'final';
   const b = attempts.reduce((m, a) => Math.max(m, a.score), 0);
   if (b > (best[L.id] || 0)) { best[L.id] = b; saveBest(); }
@@ -1446,6 +1483,7 @@ function showFinal() {
   const bi = attempts.findIndex(a => a.score === b && b > 0);
   $('finList').innerHTML = attempts.map((a, i) => `<div class="${i === bi ? 'best' : ''}"><span><strong>${a.name}</strong><small>Tentativa ${i + 1}${a.fail ? ' · ' + a.reason : ''}</small></span><strong>${fmt(a.score)}</strong></div>`).join('');
   $('finNext').hidden = levelIdx >= LEVELS.length - 1;
+  offerRanking(L, b, bi >= 0 ? attempts[bi].name : '');
   show('final', true);
   setTimeout(() => ($('finNext').hidden ? $('finAgain') : $('finNext')).focus(), 50);
 }
@@ -1660,6 +1698,101 @@ function buildMini(L, add) {
     const c = add(new THREE.CylinderGeometry(0.032, 0.032, 5, 14), steelMat, sg * (W - 0.012), L.R + MINI_Y0 - 0.01, 0); c.rotation.x = Math.PI / 2;
     for (let z = -2.4; z <= 2.41; z += 1.2) add(new THREE.CylinderGeometry(0.025, 0.025, 1.05, 8), darkSteel, sg * (W + D - 0.08), L.R + MINI_Y0 + 0.52, z);
     const rail = add(new THREE.CylinderGeometry(0.028, 0.028, 5, 10), darkSteel, sg * (W + D - 0.08), L.R + MINI_Y0 + 1.04, 0); rail.rotation.x = Math.PI / 2;
+  });
+}
+
+/* ---------- Ranking online ---------- */
+const RANK_API = 'api/scores';
+let rankOn = false, rankPeriod = 'week', rankPico = 'geral', rankReq = 0;
+function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+function deviceId() {
+  let d = lsGet('tt-device');
+  if (!d || !/^[a-z0-9-]{8,64}$/i.test(d)) { d = 'd-' + Array.from(crypto.getRandomValues(new Uint8Array(12)), b => b.toString(16).padStart(2, '0')).join(''); lsSet('tt-device', d); }
+  return d;
+}
+const nickname = () => (lsGet('tt-name') || '').trim();
+const ordinal = n => n + 'º';
+async function rankFetch(q) {
+  const r = await fetch(RANK_API + q, { cache: 'no-store' });
+  if (!r.ok) throw new Error(String(r.status));
+  return r.json();
+}
+async function rankCheck() {
+  try { await rankFetch('?pico=geral&period=week'); rankOn = true; } catch (e) { rankOn = false; }
+  $('rankBtn').hidden = !rankOn;
+}
+function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; }
+function rankRow(r) {
+  const row = el('div', 'rrow' + (r.me ? ' me' : ''));
+  row.append(el('span', 'rpos', ordinal(r.rank)));
+  const who = el('span', 'rwho'); who.append(el('strong', '', r.name + (r.me ? ' (você)' : ''))); if (r.trick) who.append(el('small', '', r.trick));
+  row.append(who, el('span', 'rsc', fmt(r.score)));
+  return row;
+}
+async function renderRanking() {
+  const id = ++rankReq, list = $('rankList');
+  [...$('rankPeriods').children].forEach(b => b.classList.toggle('on', b.dataset.p === rankPeriod));
+  [...$('rankPicos').children].forEach(b => b.classList.toggle('on', b.dataset.k === rankPico));
+  list.replaceChildren(el('p', 'rule', 'Carregando…'));
+  try {
+    const d = await rankFetch(`?pico=${rankPico}&period=${rankPeriod}&device=${deviceId()}`);
+    if (id !== rankReq) return;
+    list.replaceChildren();
+    if (!d.rows.length) { list.append(el('p', 'rule', rankPeriod === 'week' ? 'Ninguém pontuou nesta semana ainda. A vaga de 1º está aberta.' : 'Ninguém pontuou ainda.')); }
+    d.rows.forEach(r => list.append(rankRow(r)));
+    if (d.me && d.me.rank > d.rows.length) { list.append(el('div', 'rgap', '···')); list.append(rankRow({ ...d.me, me: true })); }
+    const foot = d.me ? (d.me.rank === 1 ? 'Você é o 1º. Defenda a posição.' : `Faltam ${fmt(d.me.gap || 0)} pontos para você passar o ${ordinal(d.me.rank - 1)}.`) : (nickname() ? 'Termine um pico para entrar neste ranking.' : 'Termine um pico e escolha um nome para entrar no ranking.');
+    $('rankFoot').textContent = `${d.total} ${d.total === 1 ? 'skatista' : 'skatistas'} · ${foot}`;
+  } catch (e) {
+    if (id !== rankReq) return;
+    list.replaceChildren(el('p', 'rule', 'Não foi possível carregar o ranking. Verifique a conexão e tente de novo.'));
+    $('rankFoot').textContent = '';
+  }
+}
+function openRanking(pico) {
+  rankPico = pico || 'geral';
+  ['menu', 'final', 'pre'].forEach(id => show(id, false)); show('rank', true);
+  $('rankName').textContent = nickname() ? `Seu nome: ${nickname()}` : 'Você ainda não tem nome no ranking';
+  renderRanking();
+}
+async function submitScore(level, score, trick) {
+  const box = $('finRank');
+  box.replaceChildren(el('p', 'rule', 'Enviando para o ranking…')); box.hidden = false;
+  try {
+    const r = await fetch(RANK_API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ device: deviceId(), name: nickname(), pico: level.id, score, trick }) });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || r.status);
+    box.replaceChildren();
+    const w = d.week;
+    const head = el('div', 'rankHead');
+    head.append(el('strong', '', w ? `${ordinal(w.rank)} da semana` : 'No ranking'), el('span', '', ` · ${level.name} · ${d.weekTotal} ${d.weekTotal === 1 ? 'skatista' : 'skatistas'}`));
+    box.append(head);
+    if (w && w.rank > 1) box.append(el('p', 'rule', `Faltam ${fmt(w.gap || 0)} pontos para passar o ${ordinal(w.rank - 1)}.`));
+    else if (w) box.append(el('p', 'rule', 'Você lidera este pico na semana.'));
+    if (!d.improved.week && w) box.append(el('p', 'rule', `Sua melhor nota da semana aqui continua ${fmt(w.score)}.`));
+    const btn = el('button', 'big alt', 'Ver ranking'); btn.type = 'button'; btn.addEventListener('click', () => openRanking(level.id));
+    box.append(btn);
+  } catch (e) {
+    box.replaceChildren(el('p', 'rule', e.message === 'rate' ? 'Muitos envios seguidos. Tente de novo em alguns minutos.' : 'Não foi possível enviar sua nota agora.'));
+  }
+}
+function offerRanking(level, score, trick) {
+  const box = $('finRank');
+  if (!rankOn || score <= 0) { box.hidden = true; return; }
+  if (nickname()) { submitScore(level, score, trick); return; }
+  box.replaceChildren(); box.hidden = false;
+  box.append(el('div', 'rankHead', 'Entre no ranking'));
+  const form = el('form', 'nickForm');
+  const inp = el('input'); inp.id = 'nickInput'; inp.maxLength = 16; inp.placeholder = 'Seu nome de skatista'; inp.autocomplete = 'nickname'; inp.setAttribute('aria-label', 'Seu nome no ranking');
+  const go = el('button', 'big', 'Enviar nota'); go.type = 'submit';
+  const err = el('p', 'rule');
+  form.append(inp, go); box.append(form, err);
+  form.addEventListener('submit', ev => {
+    ev.preventDefault();
+    const n = inp.value.normalize('NFC').replace(/[^\p{L}\p{N} ._\-]/gu, '').replace(/\s+/g, ' ').trim().slice(0, 16);
+    if (n.length < 2) { err.textContent = 'Use pelo menos 2 letras ou números.'; return; }
+    lsSet('tt-name', n); submitScore(level, score, trick);
   });
 }
 
@@ -1921,6 +2054,7 @@ canvas.addEventListener('pointerup', () => { sw = null; });
 canvas.addEventListener('pointercancel', () => { sw = null; });
 
 window.addEventListener('keydown', e => {
+  if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
   if (e.repeat && e.code !== 'Space') return;
   const k = e.key;
   if (k === 'Escape' || k === 'p' || k === 'P') { if (paused) { e.preventDefault(); closePause(); return; } if (state !== 'replay' || k !== 'Escape') { if (!$('hud').hidden) { e.preventDefault(); openPause(); return; } } }
@@ -1944,12 +2078,16 @@ $('rReplay').addEventListener('click', () => startReplay(true));
 $('finNext').addEventListener('click', () => openPre(levelIdx + 1));
 $('finAgain').addEventListener('click', () => openPre(levelIdx));
 $('finMenu').addEventListener('click', openMenu);
+$('rankBtn').addEventListener('click', () => openRanking('geral'));
+$('rankBack').addEventListener('click', openMenu);
+[...$('rankPeriods').children].forEach(b => b.addEventListener('click', () => { rankPeriod = b.dataset.p; renderRanking(); }));
+[...$('rankPicos').children].forEach(b => b.addEventListener('click', () => { rankPico = b.dataset.k; renderRanking(); }));
 
 /* ---------- Início ---------- */
 buildLevel(L); sk = newSkater(); sk.x = L.startX + 2;
 loadAvatar();
-resize(); openMenu();
-if (location.search.indexOf('debug') >= 0) window.__g = { setState(v) { state = v; }, FLIP, miniPos, get Lv() { return L; }, selectGrind, camera, PUSH_DUR, board, wheels, switchBase, get L() { return L; }, placeSkater, openPre, startAttempt, pop, swipe, push, startReplay, get sk() { return sk; }, get state() { return state; }, get avatar() { return avatar; }, get env() { return envReady; } };
+resize(); openMenu(); rankCheck();
+if (location.search.indexOf('debug') >= 0) window.__g = { testFinal(lv, sc, nm) { openPre(lv); attempts = [{ name: nm, score: sc, fail: false }]; showFinal(); }, setState(v) { state = v; }, FLIP, miniPos, get Lv() { return L; }, selectGrind, camera, PUSH_DUR, board, wheels, switchBase, get L() { return L; }, placeSkater, openPre, startAttempt, pop, swipe, push, startReplay, get sk() { return sk; }, get state() { return state; }, get avatar() { return avatar; }, get env() { return envReady; } };
 requestAnimationFrame(frame);
 })();
 </script>

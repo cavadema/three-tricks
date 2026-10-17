@@ -28,6 +28,17 @@ Jogo de skate no navegador feito com [Three.js](https://threejs.org). Uma manobr
 | ◀ ▶ na mini ramp | Segurar para bombear |
 | Esc ou P | Pausar |
 
+## Ranking
+
+O ranking online fica em `api/scores.js`, uma função da Vercel que guarda as notas num Redis da [Upstash](https://upstash.com).
+
+- **Por pico e geral** (soma das melhores notas de cada pico).
+- **Semanal**, zerando toda segunda no horário de Brasília, e **de todos os tempos**.
+- **Apelido** escolhido na primeira vez, guardado no aparelho junto com um identificador anônimo.
+- **Proteções**: rejeita notas acima do máximo possível de cada pico e limita a 12 envios por IP a cada 10 minutos.
+
+Para ativar, conecte um banco **Upstash Redis** ao projeto na Vercel (Storage → Create Database). A função lê `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN` ou `KV_REST_API_URL`/`KV_REST_API_TOKEN`. Sem banco, o jogo funciona normalmente e o botão de ranking fica escondido.
+
 ## Rodar localmente
 
 É um site estático, sem etapa de build. Sirva a pasta com qualquer servidor HTTP:
@@ -45,6 +56,7 @@ Abrir o `index.html` direto do disco não funciona, porque o navegador bloqueia 
 index.html            o jogo inteiro (HTML, CSS e lógica)
 vendor/three.bundle.js Three.js r149 com GLTFLoader, RGBELoader e pós-processamento
 assets/               personagens, céu HDR e texturas
+api/scores.js         API do ranking (função da Vercel)
 vercel.json           cache dos arquivos estáticos na Vercel
 ```
 
