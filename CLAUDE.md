@@ -59,6 +59,10 @@ Para depurar: abra com `?debug` na URL e use `window.__g` (expõe `sk`, `state`,
 (gravidade 14, pop 5,2, VMAX 8,5, tabelas FLIP/GR_BOX/GR_RAIL/LIPS, instabilidade por fase, etc.)
 estão no topo do `<script>`. É a fonte de verdade — mude lá.
 
+## Compartilhar replay (vídeo)
+
+Na tela de resultado dos picos há o botão **Compartilhar replay** (seção `Compartilhar replay` do index.html). Toca o replay e grava num canvas 2D (frame do 3D + faixa com manobra, nota e `three-tricks.vercel.app`) com `MediaRecorder`, **sem servidor**. Dois toques de propósito: o 1º grava; o 2º ("Enviar vídeo" / "Salvar vídeo") chama `navigator.share({files})` ou baixa o arquivo, porque o share exige um gesto do usuário e a gravação dura segundos. Formato: MP4 se o navegador gravar (Safari/Chrome recentes), senão WebM. Durante a gravação o toque não pula o replay. Não existe no modo livre da mini ramp (sem replay lá). O menu nativo de compartilhar do iOS/Android só dá para validar em aparelho real.
+
 ## Controles
 
 - **Celular:** botões na tela; deslizar o dedo no ar (← → ↓ flips, ↑ gira 180); na mini ramp, segurar ◀ ▶ para bombear.
@@ -74,7 +78,7 @@ estão no topo do `<script>`. É a fonte de verdade — mude lá.
 
 ## Estado atual (17/10/2026)
 
-Pronto: 4 picos no circuito + mini ramp como modo livre de 60 s (ainda não publicado), 2 skatistas (Michelle, Beto), fakie, giros 180/360, flip in/out nos grinds, mini ramp com bombada pelas setas, replay, menu de pausa e navegação, ranking online conectado e verificado.
+Pronto: 4 picos no circuito + mini ramp como modo livre de 60 s, botão de compartilhar replay em vídeo nos picos (ainda não publicado), 2 skatistas (Michelle, Beto), fakie, giros 180/360, flip in/out nos grinds, mini ramp com bombada pelas setas, replay, menu de pausa e navegação, ranking online conectado e verificado.
 
 ## Ideias de próximos passos
 
