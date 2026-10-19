@@ -256,6 +256,7 @@ h1{color:#fff;text-shadow:none;transform:none;font-size:clamp(48px,14vw,80px);li
     <div class="wrap">
       <h1>Three<br>Tricks</h1>
       <p class="lede">Uma manobra por tentativa, três tentativas por pico. Vale a melhor nota.</p>
+      <div id="challengeBox" class="rankBox" hidden></div>
       <div class="eyebrow">Skatista</div>
       <div id="skaterPick" class="picks"></div>
       <div class="eyebrow">Picos</div>
@@ -283,6 +284,7 @@ h1{color:#fff;text-shadow:none;transform:none;font-size:clamp(48px,14vw,80px);li
       <div class="eyebrow" id="preEyebrow">Fase</div>
       <h2 id="preName"></h2>
       <p class="lede" id="preDesc"></p>
+      <div id="preChal" class="rankBox" hidden></div>
       <div class="lines" id="preTricks"></div>
       <p class="rule" id="preRule"></p>
       <div class="actions">
@@ -327,10 +329,12 @@ h1{color:#fff;text-shadow:none;transform:none;font-size:clamp(48px,14vw,80px);li
       <h2 id="finName"></h2>
       <div><div class="eyebrow" id="finBestLbl">Melhor nota</div><div class="bigscore" id="finBest">0</div></div>
       <div class="att" id="finList"></div>
+      <div id="finChal" class="rankBox" hidden></div>
       <div id="finRank" class="rankBox" hidden></div>
       <div class="actions">
         <button id="finNext" class="big" type="button">Próxima fase</button>
         <button id="finAgain" class="big alt" type="button">Jogar de novo</button>
+        <button id="finChallenge" class="big alt" type="button" hidden>Desafiar um amigo</button>
         <button id="finMenu" class="big alt" type="button">Home</button>
       </div>
     </div>
@@ -1020,6 +1024,7 @@ function renderMenu() {
     grid.appendChild(el);
   });
   $('totalScore').textContent = fmt(total);
+  renderChallenge();
   const mc = $('miniCard'); mc.innerHTML = '';
   const mb = document.createElement('button'); mb.className = 'lvl'; mb.type = 'button';
   mb.innerHTML = `<span class="n">${MINI.name}</span><span class="s">${MINI.sub}</span><span class="row"><span class="m">Combo até ×3</span><span class="b">Melhor <strong>${fmt(best[MINI.id] || 0)}</strong></span></span>`;
@@ -1073,6 +1078,8 @@ function openPre(i) {
   $('preName').textContent = L.name;
   $('preDesc').textContent = L.desc;
   $('preRule').textContent = L.rule;
+  const pch = challengeFor(L); $('preChal').hidden = !pch;
+  if (pch) $('preChal').textContent = `Desafio: supere os ${fmt(pch.score)} pontos de ${pch.name}.`;
   const rows = [];
   if (L.kind === 'mini') {
     rows.push(['Dropar', 'Desce da borda e começa os 60 s da sessão'], ['Combo', 'Cada manobra limpa seguida soma +0,25 ao combo (até ×3). Cair zera e exige dropar de novo'], ['◀ ▶', 'Segure a seta para o lado em que o skate está indo: ele bombeia sozinho na hora certa (+0,35 m). Solte para não subir mais'], ['Botões 1 a 4', 'Rock to Fakie 220 · Axle Stall 260 · Nose Stall 320 · Blunt to Fakie 420'], ['Aéreo', 'Arma um aéreo: ← → ↓ flips, ↑ gira 180, segure GRAB'], ['Na borda', 'A manobra escolhida sai na próxima borda que você alcançar, e a sessão continua'], ['Repetir', 'A mesma manobra vale ×0,8 a cada repetição (mínimo ×0,5)']);
@@ -1467,7 +1474,7 @@ function updateReplay(dt) {
 }
 function endReplay() {
   if (state !== 'replay') return;
-  if (shareRec) { const rc = shareRec.rc; shareRec = null; try { rc.stop(); } catch (e) {} }
+  if (shareRec && !shareRec.endAt) { shareRec.endAt = performance.now(); const b = $('rShare'); b.disabled = true; b.textContent = 'Finalizando vídeo…'; }
   const r = replay; state = r.prevState; replay = null;
   show('replayTag', false); setTrick(''); setHint('');
   if (r.again) { show('result', true); setTimeout(() => $('rNext').focus(), 50); }
@@ -1525,6 +1532,10 @@ function showFinal() {
   $('finBest').textContent = fmt(b);
   $('finList').innerHTML = list;
   $('finNext').hidden = L.session || levelIdx >= LEVELS.length - 1;
+  lastFinal = { id: L.id, name: L.name, score: b, trick: bestName };
+  const fch = challengeFor(L); $('finChal').hidden = !fch;
+  if (fch) $('finChal').textContent = b > fch.score ? `Você superou ${fch.name}! ${fmt(b)} contra ${fmt(fch.score)}.` : `Faltaram ${fmt(fch.score - b + 1)} pontos para superar ${fch.name} (${fmt(fch.score)}).`;
+  $('finChallenge').hidden = !(b > 0);
   offerRanking(L, b, bestName);
   show('final', true);
   setTimeout(() => ($('finNext').hidden ? $('finAgain') : $('finNext')).focus(), 50);
@@ -1791,7 +1802,7 @@ function buildMini(L, add) {
 /* ---------- Compartilhar replay (vídeo com marca d'água) ---------- */
 // Grava o replay num canvas 2D (frame do 3D + faixa com manobra, nota e endereço) e entrega o arquivo.
 // Sem servidor: MediaRecorder no próprio aparelho; no celular abre o menu nativo de compartilhar.
-const SHARE_URL = 'https://three-tricks.vercel.app';
+const SHARE_URL = 'https://three-tricks.vercel.app', END_CARD_MS = 1800;
 let shareRec = null, shareFile = null;
 function shareMime() {
   if (!window.MediaRecorder || !HTMLCanvasElement.prototype.captureStream) return '';
@@ -1814,7 +1825,7 @@ function shareStart() {
   const k = Math.min(1, 720 / Math.min(canvas.width, canvas.height));
   const cv = document.createElement('canvas'); cv.width = Math.round(canvas.width * k) & ~1; cv.height = Math.round(canvas.height * k) & ~1;
   const chunks = []; let rc;
-  try { rc = new MediaRecorder(cv.captureStream(30), { mimeType: mime, videoBitsPerSecond: 4e6 }); } catch (e) { endReplay(); return setShareBtn('Gravação indisponível'); }
+  try { rc = new MediaRecorder(cv.captureStream(30), { mimeType: mime, videoBitsPerSecond: 6e6 }); } catch (e) { endReplay(); return setShareBtn('Gravação indisponível'); }
   rc.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
   rc.onstop = () => {
     const blob = new Blob(chunks, { type: mime.split(';')[0] });
@@ -1843,12 +1854,55 @@ function drawShareFrame() {
   g.fillStyle = 'rgba(14,20,28,.62)'; g.fillRect(3 * u, 3 * u, bw, 6.6 * u);
   g.fillStyle = '#E8B931'; g.fillText('THREE TRICKS', 5 * u, 7.9 * u);
 }
+function drawEndCard() {
+  const { cv, g, last } = shareRec, W = cv.width, H = cv.height, u = Math.min(W, H) / 100, F = '"Barlow Condensed","Arial Narrow",system-ui,sans-serif', cx = W / 2, cy = H / 2;
+  g.fillStyle = '#0E141C'; g.fillRect(0, 0, W, H);
+  g.fillStyle = '#E8B931'; g.fillRect(0, cy - 15 * u, W, 0.7 * u); g.fillRect(0, cy + 13 * u, W, 0.7 * u);
+  g.textAlign = 'center'; g.textBaseline = 'alphabetic';
+  g.font = `800 italic ${5 * u}px ${F}`; g.fillStyle = '#F1ECE0';
+  g.fillText(last.fail ? 'THREE TRICKS' : `${last.name.toUpperCase()} · ${fmt(last.score)} PONTOS`, cx, cy - 7 * u, W - 8 * u);
+  g.font = `800 italic ${11 * u}px ${F}`; g.fillStyle = '#E8B931';
+  g.fillText('JOGUE VOCÊ TAMBÉM', cx, cy + 4 * u, W - 8 * u);
+  g.font = `700 ${5.5 * u}px ${F}`; g.fillStyle = '#F1ECE0';
+  g.fillText(SHARE_URL.replace('https://', ''), cx, cy + 10.5 * u, W - 8 * u);
+}
 async function shareClick() {
   if (!shareFile) return shareStart();
   const last = attempts[attempts.length - 1], data = shareData(shareFile, last);
   if (navigator.canShare && navigator.canShare(data)) { try { await navigator.share(data); } catch (e) { /* cancelado pelo jogador */ } return; }
   const a = document.createElement('a'); a.href = URL.createObjectURL(shareFile); a.download = shareFile.name;
   document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
+
+/* ---------- Desafio por link (sem servidor) ---------- */
+// O link leva pico, nota, nome e manobra na própria URL. É só social: não passa pelo ranking, que continua validado no servidor.
+const CHALLENGE_MAX = { rampa: 4000, caixote: 4000, reto: 5000, descida: 6500, sessao: 60000 };
+const levelById = id => id === MINI.id ? MINI : LEVELS.find(l => l.id === id);
+const cleanTxt = (t, n) => String(t || '').normalize('NFC').replace(/[^\p{L}\p{N} ._\-]/gu, '').replace(/\s+/g, ' ').trim().slice(0, n);
+let challenge = null, lastFinal = null;
+(function readChallenge() {
+  const q = new URLSearchParams(location.search), id = q.get('d'), sc = Math.round(Number(q.get('s')));
+  if (!Object.prototype.hasOwnProperty.call(CHALLENGE_MAX, id) || !(sc > 0) || sc > CHALLENGE_MAX[id]) return;
+  challenge = { id, score: sc, name: cleanTxt(q.get('n'), 16) || 'Um amigo', trick: cleanTxt(q.get('t'), 40) };
+})();
+const challengeFor = lv => (challenge && challenge.id === lv.id ? challenge : null);
+function renderChallenge() {
+  const box = $('challengeBox');
+  if (!challenge) { box.hidden = true; return; }
+  const lv = levelById(challenge.id), mine = best[lv.id] || 0, done = mine > challenge.score;
+  const desc = `${challenge.name} fez ${fmt(challenge.score)} pontos em ${lv.name}${challenge.trick ? ' (' + challenge.trick + ')' : ''}.`;
+  box.replaceChildren(el('div', 'rankHead', done ? 'Desafio superado!' : 'Você foi desafiado'), el('p', 'rule', done ? `${desc} Sua melhor nota aqui é ${fmt(mine)}.` : `${desc} Consegue superar?`));
+  if (!done) { const b = el('button', 'big', 'Aceitar o desafio'); b.type = 'button'; b.addEventListener('click', () => openPre(lv === MINI ? -1 : LEVELS.indexOf(lv))); box.append(b); }
+  box.hidden = false;
+}
+async function challengeClick() {
+  if (!lastFinal || lastFinal.score <= 0) return;
+  const nm = cleanTxt(nickname(), 16), q = new URLSearchParams({ d: lastFinal.id, s: String(lastFinal.score) });
+  if (lastFinal.trick) q.set('t', cleanTxt(lastFinal.trick, 40)); if (nm) q.set('n', nm);
+  const url = `${SHARE_URL}/?${q}`, text = `Fiz ${fmt(lastFinal.score)} pontos em ${lastFinal.name} no Three Tricks. Consegue superar?`, b = $('finChallenge');
+  if (navigator.share) { try { await navigator.share({ title: 'Three Tricks', text, url }); } catch (e) { /* cancelado pelo jogador */ } return; }
+  try { await navigator.clipboard.writeText(`${text} ${url}`); b.textContent = 'Link copiado!'; setTimeout(() => { b.textContent = 'Desafiar um amigo'; }, 2500); }
+  catch (e) { window.prompt('Copie o link do desafio:', `${text} ${url}`); }
 }
 
 /* ---------- Ranking online ---------- */
@@ -2163,7 +2217,13 @@ function frame(now) {
   if (!(window.__g && window.__g.freeze) && !paused) updateCamera(dt);
   if (gradePass) gradePass.uniforms.time.value = now / 1000;
   if (composer) composer.render(); else renderer.render(scene, camera);
-  if (shareRec && state === 'replay') drawShareFrame();
+  if (shareRec) {
+    if (!shareRec.endAt) { if (state === 'replay') drawShareFrame(); }
+    else {
+      drawEndCard();
+      if (performance.now() - shareRec.endAt > END_CARD_MS) { const rc = shareRec.rc; shareRec = null; try { rc.stop(); } catch (e) {} }
+    }
+  }
   requestAnimationFrame(frame);
 }
 
@@ -2230,6 +2290,7 @@ $('rShare').addEventListener('click', shareClick);
 $('finNext').addEventListener('click', () => openPre(levelIdx + 1));
 $('finAgain').addEventListener('click', () => openPre(levelIdx));
 $('finMenu').addEventListener('click', openMenu);
+$('finChallenge').addEventListener('click', challengeClick);
 $('rankBtn').addEventListener('click', () => openRanking('geral'));
 $('rankBack').addEventListener('click', openMenu);
 [...$('rankPeriods').children].forEach(b => b.addEventListener('click', () => { rankPeriod = b.dataset.p; renderRanking(); }));
